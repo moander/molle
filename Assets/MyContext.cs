@@ -1,17 +1,50 @@
 ﻿using Boo.Lang;
 using System.Linq;
 using System;
+using System.Diagnostics;
 
 internal class MyContext
 {
-    public DotBehaviour[] Dots = new DotBehaviour[24];
-    public bool IsCurrentPlayerWhite = true;
-    public int DotsLeftToPlay = 8;
+    public static readonly MyContext Current = new MyContext();
+    public readonly DotBehaviour[] Dots = new DotBehaviour[24];
+    public bool IsCurrentPlayerWhite;
+    public int DotsLeftToPlay;
     
-    public int DotsLeftBlack = 0;
-    public int DotsLeftWhite = 0;
+    public int DotsLeftBlack;
+    public int DotsLeftWhite;
+    public bool GameOver;
+
+    internal void RegisterDot(int dotIndex, DotBehaviour dot)
+    {
+        Dots[dotIndex] = dot;
+
+        if (!Dots.Any(p=>p == null))
+        {
+            ResetGame();
+        }
+    }
+
+    internal void ResetGame()
+    {
+        IsCurrentPlayerWhite = true;
+        DotsLeftToPlay = 8;
+
+        DotsLeftBlack = 0;
+        DotsLeftWhite = 0;
+        GameOver = false;
+
+        foreach (var dot in Dots)
+        {
+            dot.CurrentMode = DotBehaviour.Mode.NotUsed;
+            dot.MyCanSelect = true;
+            dot.HasThreeInRow = false;
+        }
+
+    }
 
     internal DotBehaviour CurrentlySelectedDot;
+
+    internal ColorIndicatorBehaviour ColorIndicator;
 
     public void UpdateDots(DotBehaviour currentDot, bool DoSwitchPlayer)
     {
@@ -73,6 +106,10 @@ internal class MyContext
         if (DotsLeftToPlay > 0)
         {
             // Put new anywhere free
+            foreach (var dot in Dots)
+            {
+                dot.MyCanSelect = dot.CurrentMode == DotBehaviour.Mode.NotUsed;
+            }
         }
         else if (CurrentlySelectedDot == null)
         {
@@ -120,7 +157,7 @@ internal class MyContext
 
     void UpdateAndSetThreeInRow(DotBehaviour dot, int index1, int index2)
     {
-        if (dot.IsSamePlayer(Dots[dot.DotIndex - index1]) && dot.IsSamePlayer(Dots[dot.DotIndex - index2]))
+        if (dot.IsSamePlayer(Dots[dot.DotIndex + index1]) && dot.IsSamePlayer(Dots[dot.DotIndex + index2]))
         {
             Dots[dot.DotIndex - index1].HasThreeInRow = true;
             Dots[dot.DotIndex - index2].HasThreeInRow = true;

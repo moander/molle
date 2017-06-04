@@ -27,12 +27,13 @@ public class DotBehaviour : MonoBehaviour {
     private Vector3 inUseLocalScale;
     public float CannotSelectAnimation;
     private double CannotSelectSin;
-    private static MyContext Context = new MyContext();
+    private static MyContext Context = MyContext.Current;
     public bool isWhite = false;
     private bool NeedUpdate;
     internal int DotIndex;
     public List<int> canTouch = new List<int>();
     internal bool HasThreeInRow;
+
 
     internal bool IsCurrentColor
     {
@@ -71,7 +72,7 @@ public class DotBehaviour : MonoBehaviour {
         CurrentMode = Mode.NotUsed;
         char[] aaa = { '(', ')', ' ' };
         DotIndex = Convert.ToInt32(this.name.Substring(3).Trim(aaa), 10);
-        Context.Dots[DotIndex] = this;
+        Context.RegisterDot(DotIndex, this);
         initialLocalScale = transform.localScale;
         notUsedLocalScale = initialLocalScale;
         inUseLocalScale = new Vector3(initialLocalScale.x * 1.5F, initialLocalScale.y * 4.5F, initialLocalScale.z * 1.5F);
@@ -137,58 +138,101 @@ public class DotBehaviour : MonoBehaviour {
 
     void OnMouseDown()
     {
-        if (MyCanSelect)
+        if(Context.DotsLeftToPlay == 0 && (Context.DotsLeftWhite < 3 || Context.DotsLeftBlack < 3))
         {
-            var DoSwitchPlayer = false;
-
-            if (CurrentMode == Mode.NotUsed)
-            {
-                if (Context.DotsLeftToPlay == 0)
-                {
-                    CurrentMode = Mode.IsPlayer;
-                    isWhite = Context.IsCurrentPlayerWhite;
-
-                    Context.CurrentlySelectedDot.CurrentMode = Mode.NotUsed;
-
-                    DoSwitchPlayer = true;
-                }
-                else
-                {
-                    CurrentMode = Mode.IsPlayer;
-                    isWhite = Context.IsCurrentPlayerWhite;
-
-                    MyCanSelect = false;
-
-                    if( --Context.DotsLeftToPlay == 0 )
-                    {
-                        foreach(var dot in Context.Dots)
-                        {
-                            dot.MyCanSelect = false;
-                        }
-                    }
-
-                    if(isWhite)
-                    {
-                        Context.DotsLeftWhite++;
-                    } else
-                    {
-                        Context.DotsLeftBlack++;
-                    }
-                    
-                    DoSwitchPlayer = true;
-                }
-            }
-            else if (CurrentMode == Mode.IsPlayer)
-            {
-                Context.CurrentlySelectedDot = MyIsSelected ? null : this;
-            }
-
-            Context.UpdateDots(this, DoSwitchPlayer);
+            Context.GameOver = true;
         }
-        else
+
+        if(Context.GameOver)
         {
+            foreach(var dot in Context.Dots)
+            {
+                dot.MyCanSelect = false;
+            }
             CannotSelectAnimation = 0.8F;
             CannotSelectSin = 0.0F;
+            return;
+        }
+
+        try
+        {
+            if (MyCanSelect)
+            {
+                var DoSwitchPlayer = false;
+
+                if (CurrentMode == Mode.NotUsed)
+                {
+                    if (Context.DotsLeftToPlay == 0)
+                    {
+                        CurrentMode = Mode.IsPlayer;
+                        isWhite = Context.IsCurrentPlayerWhite;
+
+                        Context.CurrentlySelectedDot.CurrentMode = Mode.NotUsed;
+
+                        DoSwitchPlayer = true;
+                    }
+                    else
+                    {
+                        CurrentMode = Mode.IsPlayer;
+                        isWhite = Context.IsCurrentPlayerWhite;
+
+                        MyCanSelect = false;
+
+                        if (--Context.DotsLeftToPlay == 0)
+                        {
+                            foreach (var dot in Context.Dots)
+                            {
+                                dot.MyCanSelect = false;
+                            }
+                        }
+
+                        if (isWhite)
+                        {
+                            Context.DotsLeftWhite++;
+                        }
+                        else
+                        {
+                            Context.DotsLeftBlack++;
+                        }
+
+                        DoSwitchPlayer = true;
+                    }
+                }
+                else if (CurrentMode == Mode.IsPlayer)
+                {
+                    if (IsCurrentColor)
+                    {
+                        Context.CurrentlySelectedDot = MyIsSelected ? null : this;
+                    }
+                    else
+                    {
+                        if(isWhite)
+                        {
+                            Context.DotsLeftWhite--;
+                        }
+                        else
+                        {
+                            Context.DotsLeftBlack--;
+                        }
+
+                        CurrentMode = Mode.NotUsed;
+                        MyCanSelect = false;
+
+                        DoSwitchPlayer = true;
+                    }
+                }
+
+                Context.UpdateDots(this, DoSwitchPlayer);
+            }
+            else
+            {
+                CannotSelectAnimation = 0.8F;
+                CannotSelectSin = 0.0F;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogException(ex, this);
         }
     }
 
