@@ -14,21 +14,22 @@ using System.Linq;
  */
 
 [Serializable]
-public class DotBehaviour : MonoBehaviour {
+public class DotBehaviour : MonoBehaviour
+{
     public string Jau { get; set; }
 
-    public double CurrentScaleSin = 0.0F;
+    public double CurrentScaleSin;
     public double Scaler = 4.0;
     public double Speed = 8;
     public bool MyCanSelect;
-    public Mode CurrentMode = Mode.NotUsed;
+    public Mode CurrentMode;
     private Vector3 initialLocalScale;
     private Vector3 notUsedLocalScale;
     private Vector3 inUseLocalScale;
     public float CannotSelectAnimation;
     private double CannotSelectSin;
     private static MyContext Context = MyContext.Current;
-    public bool isWhite = false;
+    public bool isWhite;
     private bool NeedUpdate;
     internal int DotIndex;
     public List<int> canTouch = new List<int>();
@@ -66,10 +67,18 @@ public class DotBehaviour : MonoBehaviour {
         }
     }*/
 
-    // Use this for initialization
-    void Start() {
-        MyCanSelect = true;
+    internal void ResetDot()
+    {
         CurrentMode = Mode.NotUsed;
+        MyCanSelect = true;
+        HasThreeInRow = false;
+        isWhite = false;
+        CurrentScaleSin = 0.0F;
+    }
+
+    // Use this for initialization
+    void Start()
+    {
         char[] aaa = { '(', ')', ' ' };
         DotIndex = Convert.ToInt32(this.name.Substring(3).Trim(aaa), 10);
         Context.RegisterDot(DotIndex, this);
@@ -88,7 +97,7 @@ public class DotBehaviour : MonoBehaviour {
                 canTouch.Add(DotIndex + 7);
                 canTouch.Add(DotIndex + 1);
             }
-            else if(CircleIndex == 7)
+            else if (CircleIndex == 7)
             {
                 canTouch.Add(DotIndex - 7);
                 canTouch.Add(DotIndex - 1);
@@ -102,7 +111,7 @@ public class DotBehaviour : MonoBehaviour {
         else
         {
             // Middle
-            if(CircleIndex == 7)
+            if (CircleIndex == 7)
             {
                 canTouch.Add(DotIndex - 7);
                 canTouch.Add(DotIndex - 1);
@@ -112,13 +121,13 @@ public class DotBehaviour : MonoBehaviour {
                 canTouch.Add(DotIndex - 1);
                 canTouch.Add(DotIndex + 1);
             }
-            
+
 
             if (CircleNumber == 0)
             {
                 canTouch.Add(DotIndex + 8);
             }
-            else if(CircleNumber == 1)
+            else if (CircleNumber == 1)
             {
                 canTouch.Add(DotIndex + 8);
                 canTouch.Add(DotIndex - 8);
@@ -127,8 +136,10 @@ public class DotBehaviour : MonoBehaviour {
             {
                 canTouch.Add(DotIndex - 8);
             }
-            
+
         }
+
+        ResetDot();
     }
 
     internal bool IsSamePlayer(DotBehaviour other)
@@ -138,17 +149,8 @@ public class DotBehaviour : MonoBehaviour {
 
     void OnMouseDown()
     {
-        if(Context.DotsLeftToPlay == 0 && (Context.DotsLeftWhite < 3 || Context.DotsLeftBlack < 3))
+        if (Context.GameOver)
         {
-            Context.GameOver = true;
-        }
-
-        if(Context.GameOver)
-        {
-            foreach(var dot in Context.Dots)
-            {
-                dot.MyCanSelect = false;
-            }
             CannotSelectAnimation = 0.8F;
             CannotSelectSin = 0.0F;
             return;
@@ -206,7 +208,7 @@ public class DotBehaviour : MonoBehaviour {
                     }
                     else
                     {
-                        if(isWhite)
+                        if (isWhite)
                         {
                             Context.DotsLeftWhite--;
                         }
@@ -237,7 +239,8 @@ public class DotBehaviour : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update () {
+    void Update()
+    {
         Vector3 baseSize = initialLocalScale;
 
         if (CurrentMode == Mode.NotUsed)
@@ -248,16 +251,17 @@ public class DotBehaviour : MonoBehaviour {
         else if (CurrentMode == Mode.IsPlayer)
         {
             baseSize = inUseLocalScale;
-            if(this.isWhite)
+            if (this.isWhite)
             {
                 GetComponent<Renderer>().material.color = new Color(1.0F, 1.0F, 1.0F); //C#
-            } else
+            }
+            else
             {
                 GetComponent<Renderer>().material.color = new Color(0.0F, 0.0F, 0.0F); //C#
             }
         }
 
-        if(MyIsSelected)
+        if (MyIsSelected)
         {
             CurrentScaleSin += Speed * 4.0F * Time.deltaTime;
 
@@ -272,7 +276,7 @@ public class DotBehaviour : MonoBehaviour {
             baseSize = new Vector3(baseSize.x * (float)ScaleValue, baseSize.y, baseSize.x * (float)ScaleValue);
         }
 
-        if(CannotSelectAnimation > 0.0F)
+        if (CannotSelectAnimation > 0.0F)
         {
             CannotSelectAnimation -= Time.deltaTime;
             CannotSelectSin += Speed * 10.0F * Time.deltaTime;

@@ -9,7 +9,7 @@ internal class MyContext
     public readonly DotBehaviour[] Dots = new DotBehaviour[24];
     public bool IsCurrentPlayerWhite;
     public int DotsLeftToPlay;
-    
+
     public int DotsLeftBlack;
     public int DotsLeftWhite;
     public bool GameOver;
@@ -18,7 +18,7 @@ internal class MyContext
     {
         Dots[dotIndex] = dot;
 
-        if (!Dots.Any(p=>p == null))
+        if (!Dots.Any(p => p == null))
         {
             ResetGame();
         }
@@ -35,9 +35,7 @@ internal class MyContext
 
         foreach (var dot in Dots)
         {
-            dot.CurrentMode = DotBehaviour.Mode.NotUsed;
-            dot.MyCanSelect = true;
-            dot.HasThreeInRow = false;
+            dot.ResetDot();
         }
 
     }
@@ -120,7 +118,7 @@ internal class MyContext
             }
 
             // Second select dot to move check
-            foreach (var dot in Dots.Where(p=>p.MyCanSelect))
+            foreach (var dot in Dots.Where(p => p.MyCanSelect))
             {
                 dot.MyCanSelect = dot.canTouch.Select(p => this.Dots[p])
                     .Any(p => p.CurrentMode == DotBehaviour.Mode.NotUsed);
@@ -138,7 +136,7 @@ internal class MyContext
                     dot.MyCanSelect = false;
                 }
 
-                foreach(var i in CurrentlySelectedDot.canTouch)
+                foreach (var i in CurrentlySelectedDot.canTouch)
                 {
                     var dot = Dots[i];
                     dot.MyCanSelect = dot.CurrentMode == DotBehaviour.Mode.NotUsed;
@@ -153,7 +151,32 @@ internal class MyContext
                 }
             }
         }
+
+        // Check if no moves is available
+        if (!Dots.Any(p => p.MyCanSelect))
+        {
+            if (++noPossibleMoveCounter == 1)
+            {
+                UpdateDots(currentDot, true);
+            }
+            else if (noPossibleMoveCounter > 1)
+            {
+                SetGameOver();
+            }
+        }
+        else
+        {
+            noPossibleMoveCounter = 0;
+        }
+
+        // Check if game over
+        if (DotsLeftToPlay == 0 && (DotsLeftWhite < 3 || DotsLeftBlack < 3))
+        {
+            SetGameOver();
+        }
     }
+
+    int noPossibleMoveCounter = 0;
 
     void UpdateAndSetThreeInRow(DotBehaviour dot, int index1, int index2)
     {
@@ -165,5 +188,14 @@ internal class MyContext
         }
     }
 
+    void SetGameOver()
+    {
+        GameOver = true;
+
+        foreach (var dot in Dots)
+        {
+            dot.MyCanSelect = false;
+        }
+    }
 
 }
